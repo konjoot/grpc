@@ -11,6 +11,8 @@ It is generated from these files:
 It has these top-level messages:
 	SessionRequest
 	SessionReply
+	AuthRequest
+	AuthReply
 */
 package sessions
 
@@ -55,9 +57,32 @@ func (m *SessionReply) String() string            { return proto.CompactTextStri
 func (*SessionReply) ProtoMessage()               {}
 func (*SessionReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+// The request message containing the user's token.
+type AuthRequest struct {
+	Token []byte `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *AuthRequest) Reset()                    { *m = AuthRequest{} }
+func (m *AuthRequest) String() string            { return proto.CompactTextString(m) }
+func (*AuthRequest) ProtoMessage()               {}
+func (*AuthRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+// The response message
+type AuthReply struct {
+	Token  []byte `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Status bool   `protobuf:"varint,2,opt,name=status" json:"status,omitempty"`
+}
+
+func (m *AuthReply) Reset()                    { *m = AuthReply{} }
+func (m *AuthReply) String() string            { return proto.CompactTextString(m) }
+func (*AuthReply) ProtoMessage()               {}
+func (*AuthReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
 func init() {
 	proto.RegisterType((*SessionRequest)(nil), "sessions.SessionRequest")
 	proto.RegisterType((*SessionReply)(nil), "sessions.SessionReply")
+	proto.RegisterType((*AuthRequest)(nil), "sessions.AuthRequest")
+	proto.RegisterType((*AuthReply)(nil), "sessions.AuthReply")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -73,6 +98,7 @@ const _ = grpc.SupportPackageIsVersion2
 type SessionClient interface {
 	// Sends a greeting
 	Create(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (*SessionReply, error)
+	Auth(ctx context.Context, opts ...grpc.CallOption) (Session_AuthClient, error)
 }
 
 type sessionClient struct {
@@ -92,11 +118,43 @@ func (c *sessionClient) Create(ctx context.Context, in *SessionRequest, opts ...
 	return out, nil
 }
 
+func (c *sessionClient) Auth(ctx context.Context, opts ...grpc.CallOption) (Session_AuthClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Session_serviceDesc.Streams[0], c.cc, "/sessions.Session/Auth", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &sessionAuthClient{stream}
+	return x, nil
+}
+
+type Session_AuthClient interface {
+	Send(*AuthRequest) error
+	Recv() (*AuthReply, error)
+	grpc.ClientStream
+}
+
+type sessionAuthClient struct {
+	grpc.ClientStream
+}
+
+func (x *sessionAuthClient) Send(m *AuthRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *sessionAuthClient) Recv() (*AuthReply, error) {
+	m := new(AuthReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for Session service
 
 type SessionServer interface {
 	// Sends a greeting
 	Create(context.Context, *SessionRequest) (*SessionReply, error)
+	Auth(Session_AuthServer) error
 }
 
 func RegisterSessionServer(s *grpc.Server, srv SessionServer) {
@@ -121,6 +179,32 @@ func _Session_Create_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Session_Auth_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SessionServer).Auth(&sessionAuthServer{stream})
+}
+
+type Session_AuthServer interface {
+	Send(*AuthReply) error
+	Recv() (*AuthRequest, error)
+	grpc.ServerStream
+}
+
+type sessionAuthServer struct {
+	grpc.ServerStream
+}
+
+func (x *sessionAuthServer) Send(m *AuthReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *sessionAuthServer) Recv() (*AuthRequest, error) {
+	m := new(AuthRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 var _Session_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "sessions.Session",
 	HandlerType: (*SessionServer)(nil),
@@ -130,19 +214,29 @@ var _Session_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Session_Create_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Auth",
+			Handler:       _Session_Auth_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 }
 
 var fileDescriptor0 = []byte{
-	// 149 bytes of a gzipped FileDescriptorProto
+	// 208 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0x92, 0x2d, 0x28, 0xca, 0x2f,
 	0xc9, 0xd7, 0x2f, 0x4e, 0x2d, 0x2e, 0xce, 0xcc, 0xcf, 0x2b, 0x86, 0x33, 0xf4, 0xc0, 0xe2, 0x42,
 	0x1c, 0x30, 0xbe, 0x92, 0x15, 0x17, 0x5f, 0x30, 0x84, 0x1d, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c,
 	0x22, 0x24, 0xc2, 0xc5, 0x9a, 0x93, 0x9f, 0x9e, 0x99, 0x27, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x13,
 	0x04, 0xe1, 0x08, 0x09, 0x71, 0xb1, 0x14, 0x24, 0x16, 0x17, 0x4b, 0x30, 0x81, 0x05, 0xc1, 0x6c,
 	0x25, 0x15, 0x2e, 0x1e, 0xb8, 0xde, 0x82, 0x9c, 0x4a, 0x90, 0xce, 0x92, 0xfc, 0xec, 0x54, 0xb8,
-	0x4e, 0x30, 0xc7, 0xc8, 0x9d, 0x8b, 0x1d, 0xaa, 0x4a, 0xc8, 0x86, 0x8b, 0xcd, 0xb9, 0x28, 0x35,
-	0xb1, 0x24, 0x55, 0x48, 0x42, 0x0f, 0xee, 0x22, 0x54, 0xeb, 0xa5, 0xc4, 0xb0, 0xc8, 0x00, 0x0d,
-	0x57, 0x62, 0x48, 0x62, 0x03, 0xbb, 0xdd, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x5a, 0xc9, 0x62,
-	0x68, 0xdc, 0x00, 0x00, 0x00,
+	0x4e, 0x30, 0x47, 0x49, 0x99, 0x8b, 0xdb, 0xb1, 0xb4, 0x24, 0x03, 0xc9, 0x78, 0x2c, 0x8a, 0x2c,
+	0xb9, 0x38, 0x21, 0x8a, 0x70, 0x9a, 0x23, 0x24, 0xc6, 0xc5, 0x56, 0x5c, 0x92, 0x58, 0x52, 0x0a,
+	0x71, 0x03, 0x47, 0x10, 0x94, 0x67, 0xd4, 0xc8, 0xc8, 0xc5, 0x0e, 0x75, 0x86, 0x90, 0x0d, 0x17,
+	0x9b, 0x73, 0x51, 0x6a, 0x62, 0x49, 0xaa, 0x90, 0x84, 0x1e, 0xdc, 0xcb, 0xa8, 0xfe, 0x93, 0x12,
+	0xc3, 0x22, 0x03, 0xb4, 0x55, 0x89, 0x41, 0xc8, 0x82, 0x8b, 0x05, 0xe4, 0x08, 0x21, 0x51, 0x84,
+	0x0a, 0x24, 0x97, 0x4b, 0x09, 0xa3, 0x0b, 0x83, 0x75, 0x69, 0x30, 0x1a, 0x30, 0x26, 0xb1, 0x81,
+	0x83, 0xd5, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0xae, 0x53, 0xdc, 0x91, 0x77, 0x01, 0x00, 0x00,
 }

@@ -9,6 +9,7 @@ package sessions;
 service Session {
   // Sends a greeting
   rpc Create (SessionRequest) returns (SessionReply) {}
+  rpc Auth(stream AuthRequest) returns (stream AuthReply) {}
 }
 
 // The request message containing the user's credentials.
@@ -20,4 +21,15 @@ message SessionRequest {
 // The response message containing the token
 message SessionReply {
   bytes token = 1;
+}
+
+// The request message containing the user's token.
+message AuthRequest {
+	bytes token = 1;
+}
+
+// The response message
+message AuthReply{
+	bytes token = 1;
+	bool status = 2;
 }

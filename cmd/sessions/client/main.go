@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -38,10 +39,58 @@ func main() {
 		pass = []byte(os.Args[2])
 	}
 
-	r, err := c.Create(context.Background(), &pb.SessionRequest{Login: login, Pass: pass})
+	stream, err := c.Auth(context.Background())
 	if err != nil {
-		log.Fatalf("could not create session: %v", err)
+		log.Print(err)
+		return
 	}
 
-	log.Printf("Session: %x", r.Token)
+	tokens, statuses := authorize(stream)
+
+	for i := 0; i < 100; i++ {
+		r, err := c.Create(context.Background(), &pb.SessionRequest{Login: login, Pass: pass})
+		if err != nil {
+			log.Fatalf("could not create session: %v", err)
+		}
+
+		tokens <- r.Token
+	}
+
+	for status := range statuses {
+		log.Print(status)
+	}
+}
+
+func authorize(stream pb.Session_AuthClient) (chan []byte, chan string) {
+	tokens := make(chan []byte)
+	statuses := make(chan string)
+
+	var token []byte
+	var err error
+
+	go func() {
+		for token = range tokens {
+			if err = stream.Send(&pb.AuthRequest{Token: token}); err != nil {
+				log.Print(err)
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer close(statuses)
+		defer stream.CloseSend()
+
+		for i := 0; i < 100; i++ {
+			if sess, err := stream.Recv(); err == nil {
+				statuses <- fmt.Sprintf("token: %x, status: %t\n", sess.Token, sess.Status)
+			} else {
+				log.Print(err)
+				return
+			}
+		}
+
+	}()
+
+	return tokens, statuses
 }

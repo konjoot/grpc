@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"bytes"
-	"errors"
 	"log"
 	"os"
 
@@ -12,12 +11,10 @@ import (
 	pb "github.com/konjoot/grpc/proto/sessions"
 )
 
-var ErrNotFound = errors.New("user not found")
-var ErrWrongCreds = errors.New("bad users creds")
-
 // Create implements sessions.Create
 func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.SessionReply, error) {
 	conn := redis.New()
+	defer conn.Close()
 
 	rep, err := conn.Do("hget", "users", in.Login)
 
@@ -40,7 +37,16 @@ func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.Session
 		return nil, ErrWrongCreds
 	}
 
-	return token()
+	sess, err := token()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = conn.Do("hset", "sessions", sess.Token, true); err != nil {
+		return nil, err
+	}
+
+	return sess, nil
 }
 
 func token() (*pb.SessionReply, error) {
