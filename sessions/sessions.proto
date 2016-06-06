@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package sessions;
+
+// To generate code use this command:
+// protoc -I . sessions.proto --go_out=plugins=grpc:.
+
+// The session service definition.
+service Session {
+  // Sends a greeting
+  rpc Create (SessionRequest) returns (SessionReply) {}
+}
+
+// The request message containing the user's credentials.
+message SessionRequest {
+  string login = 1;
+  string pass = 2;
+}
+
+// The response message containing the token
+message SessionReply {
+  string token = 1;
+}
