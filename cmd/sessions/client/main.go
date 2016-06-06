@@ -10,10 +10,11 @@ import (
 	pb "github.com/konjoot/grpc/proto/sessions"
 )
 
-const (
-	address      = "localhost:50051"
-	defaultLogin = "login"
-	defaultPass  = "pass"
+const address = "localhost:50051"
+
+var (
+	defaultLogin = []byte("login")
+	defaultPass  = []byte("pass")
 )
 
 func main() {
@@ -30,16 +31,17 @@ func main() {
 	pass := defaultPass
 
 	if len(os.Args) > 1 {
-		login = os.Args[1]
+		login = []byte(os.Args[1])
 	}
 
 	if len(os.Args) > 2 {
-		pass = os.Args[2]
+		pass = []byte(os.Args[2])
 	}
 
 	r, err := c.Create(context.Background(), &pb.SessionRequest{Login: login, Pass: pass})
 	if err != nil {
 		log.Fatalf("could not create session: %v", err)
 	}
-	log.Printf("Session: %s", r.Token)
+
+	log.Printf("Session: %x", r.Token)
 }

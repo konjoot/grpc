@@ -3,7 +3,7 @@ syntax = "proto3";
 package sessions;
 
 // To generate code use this command:
-// protoc -I . sessions.proto --go_out=plugins=grpc:.
+// protoc -I . ./proto/sessions/sessions.proto --go_out=plugins=grpc:.
 
 // The session service definition.
 service Session {
@@ -13,11 +13,11 @@ service Session {
 
 // The request message containing the user's credentials.
 message SessionRequest {
-  string login = 1;
-  string pass = 2;
+  bytes login = 1;
+  bytes pass = 2;
 }
 
 // The response message containing the token
 message SessionReply {
-  string token = 1;
+  bytes token = 1;
 }
