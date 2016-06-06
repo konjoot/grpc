@@ -4,23 +4,15 @@ import (
 	"log"
 	"net"
 
-	"golang.org/x/net/context"
+	"github.com/konjoot/grpc/services/sessions"
 	"google.golang.org/grpc"
 
-	pb "github.com/konjoot/grpc/sessions"
+	pb "github.com/konjoot/grpc/proto/sessions"
 )
 
 const (
 	port = ":50051"
 )
-
-// server is used to implement sessions.Create.
-type server struct{}
-
-// Create implements sessions.Create
-func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.SessionReply, error) {
-	return &pb.SessionReply{Token: "newtoken"}, nil
-}
 
 func main() {
 	lis, err := net.Listen("tcp", port)
@@ -28,6 +20,6 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterSessionServer(s, &server{})
+	pb.RegisterSessionServer(s, sessions.New())
 	s.Serve(lis)
 }
