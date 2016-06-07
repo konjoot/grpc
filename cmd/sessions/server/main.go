@@ -13,25 +13,31 @@ import (
 )
 
 const (
-	port = ":50051"
+	listen = ":50051"
+	trace  = ":34567"
 )
 
-var trace = flag.Bool("trace", false, "Whether tracing is on")
+var enableTracing = flag.Bool("trace", false, "Whether tracing is on")
 
 func main() {
 	flag.Parse()
-	grpc.EnableTracing = *trace
 
-	lis, err := net.Listen("tcp", port)
+	if *enableTracing {
+		grpc.EnableTracing = true
+		go http.ListenAndServe(trace, nil)
+	}
+
+	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	if grpc.EnableTracing {
-		go http.ListenAndServe("localhost:34567", nil)
-	}
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(sessions.UnaryInterceptor),
+		grpc.StreamInterceptor(sessions.StreamInterceptor),
+	)
 
-	s := grpc.NewServer()
 	pb.RegisterSessionServer(s, sessions.New())
+
 	s.Serve(lis)
 }

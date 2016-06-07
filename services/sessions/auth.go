@@ -4,15 +4,13 @@ import (
 	"io"
 	"log"
 
-	"github.com/konjoot/grpc/redis"
-
 	rd "github.com/garyburd/redigo/redis"
 	pb "github.com/konjoot/grpc/proto/sessions"
 )
 
 // Auth implements sessions.Auth
 func (s *server) Auth(stream pb.Session_AuthServer) error {
-	conn := redis.New()
+	conn := s.redis()
 	defer conn.Close()
 
 	for {

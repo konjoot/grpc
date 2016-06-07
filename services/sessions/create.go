@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/konjoot/grpc/redis"
 	"golang.org/x/net/context"
 
 	pb "github.com/konjoot/grpc/proto/sessions"
@@ -13,7 +12,7 @@ import (
 
 // Create implements sessions.Create
 func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.SessionReply, error) {
-	conn := redis.New()
+	conn := s.redis()
 	defer conn.Close()
 
 	rep, err := conn.Do("hget", "users", in.Login)
