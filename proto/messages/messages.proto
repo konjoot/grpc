@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package messages;
+
+// To generate code use this command:
+// protoc -I . ./proto/messages/messages.proto --go_out=plugins=grpc:.
+
+// The session service definition.
+service Message {
+  // Sends a greeting
+  rpc Create (MessageRequest) returns (MessageReply) {}
+}
+
+// The request message containing the new message's content
+message MessageRequest {
+  bytes user = 1;
+  bytes text = 2;
+}
+
+// The response message containing the newely created message
+message MessageReply {
+  bytes id = 1;
+  bytes user = 2;
+  bytes text = 3;
+  int64 timestamp = 4;
+}
