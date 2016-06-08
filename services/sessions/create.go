@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"bytes"
+	"encoding/hex"
 	"log"
 	"os"
 
@@ -36,7 +37,7 @@ func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.Session
 		return nil, ErrWrongCreds
 	}
 
-	sess, err := token()
+	sess, err := newSession()
 	if err != nil {
 		return nil, err
 	}
@@ -48,18 +49,22 @@ func (s *server) Create(ctx context.Context, in *pb.SessionRequest) (*pb.Session
 	return sess, nil
 }
 
-func token() (*pb.SessionReply, error) {
+func newSession() (*pb.SessionReply, error) {
 	f, err := os.OpenFile("/dev/urandom", os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	session := &pb.SessionReply{Token: make([]byte, 16)}
-	_, err = f.Read(session.Token)
+	buf := make([]byte, 8)
+	_, err = f.Read(buf)
 	if err != nil {
 		return nil, err
 	}
+
+	session := &pb.SessionReply{Token: make([]byte, 16)}
+
+	hex.Encode(session.Token, buf)
 
 	return session, nil
 }

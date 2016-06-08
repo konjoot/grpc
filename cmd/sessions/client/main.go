@@ -39,13 +39,7 @@ func main() {
 		pass = []byte(os.Args[2])
 	}
 
-	stream, err := c.Auth(context.Background())
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	tokens, statuses := authorize(stream)
+	tokens, statuses := authorize(c)
 
 	for i := 0; i < 100; i++ {
 		r, err := c.Create(context.Background(), &pb.SessionRequest{Login: login, Pass: pass})
@@ -56,40 +50,30 @@ func main() {
 		tokens <- r.Token
 	}
 
+	close(tokens)
+
 	for status := range statuses {
 		log.Print(status)
 	}
 }
 
-func authorize(stream pb.Session_AuthClient) (chan []byte, chan string) {
+func authorize(c pb.SessionClient) (chan []byte, chan string) {
 	tokens := make(chan []byte)
-	statuses := make(chan string)
+	statuses := make(chan string, 101)
 
 	var token []byte
-	var err error
-
-	go func() {
-		for token = range tokens {
-			if err = stream.Send(&pb.AuthRequest{Token: token}); err != nil {
-				log.Print(err)
-				return
-			}
-		}
-	}()
 
 	go func() {
 		defer close(statuses)
-		defer stream.CloseSend()
 
-		for i := 0; i < 100; i++ {
-			if sess, err := stream.Recv(); err == nil {
-				statuses <- fmt.Sprintf("token: %x, status: %t\n", sess.Token, sess.Status)
-			} else {
+		for token = range tokens {
+			sess, err := c.Auth(context.Background(), &pb.AuthRequest{Token: token})
+			if err != nil {
 				log.Print(err)
-				return
 			}
-		}
 
+			statuses <- fmt.Sprintf("token: %s, status: %t\n", sess.Token, sess.Status)
+		}
 	}()
 
 	return tokens, statuses

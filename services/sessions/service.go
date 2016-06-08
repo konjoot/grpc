@@ -28,13 +28,13 @@ var UnaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.Una
 }
 
 var StreamInterceptor = func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return handler(srv, &AuthStream{ss})
+	return handler(srv, &Stream{ss})
 }
 
-type AuthStream struct {
+type Stream struct {
 	grpc.ServerStream
 }
 
-func (as *AuthStream) Context() context.Context {
+func (as *Stream) Context() context.Context {
 	return context.WithValue(as.ServerStream.Context(), "REQID", "streamID")
 }
